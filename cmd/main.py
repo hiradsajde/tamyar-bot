@@ -49,7 +49,7 @@ def main():
                 case _ :
                     if re.match(r"http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?",event.text):
                         user_daily_download = get_daily_download(event.chat_id)
-                        if user_daily_download > config["DAILY_DOWNLOAD_LIMIT"]: 
+                        if user_daily_download > int(config.get("DAILY_DOWNLOAD_LIMIT")): 
                             await event.reply(i18n.t("sentence.max_limit_excited"))
                             return
                         loading = await event.reply("🌕")
@@ -62,7 +62,7 @@ def main():
                             ) and (
                                 f["protocol"] == "https"
                             ) and (
-                                config["DAILY_DOWNLOAD_LIMIT"] - user_daily_download > int(f["filesize"]) if f["filesize"] != None else 0
+                                int(config.get("DAILY_DOWNLOAD_LIMIT")) - user_daily_download > int(f["filesize"]) if f["filesize"] != None else 0
                             )
                             ) , dl_info["formats"])
                         dl_info_text_description = dl_info["description"][:50]
