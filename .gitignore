@@ -314,4 +314,4 @@ pyrightconfig.json
 
 *.session
 *.session-journal
-./*.db
+*.db
