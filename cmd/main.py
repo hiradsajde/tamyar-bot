@@ -15,6 +15,7 @@ from utils.definitions import is_participant
 from hurry.filesize import size
 from dotenv import load_dotenv
 from utils.config import config
+from urllib.parse import urlparse, parse_qs
 import asyncio 
 
 def main():
@@ -53,7 +54,18 @@ def main():
                             await event.reply(i18n.t("sentence.max_limit_excited"))
                             return
                         loading = await event.reply("🌕")
-                        dl_info_json = subprocess.check_output(["yt-dlp","--force-generic","--audio-multistreams", "-j",event.text,"--proxy","socks5://192.168.31.113:2334"])
+                        parsed_url = urlparse(event.text)
+                        captured_id = parse_qs(parsed_url.query).get('v')
+                        if captured_id :
+                            captured_id = captured_id[0]
+                        else: 
+                            captured_id = parsed_url.path
+                        proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') != None else ""
+                        try:
+                            dl_info_json = subprocess.check_output(["yt-dlp","--force-generic", *proxy_handler.split(" ") , "-j",f"https://youtu.be/{captured_id}"])
+                        except Exception: 
+                            loading.delete()
+                            event.reply(i18n.t("sentence.error_happens"))
                         dl_info = json.loads(dl_info_json)
                         dl_info_formats_filter = filter(lambda f: (
                             (
@@ -108,9 +120,12 @@ def main():
                                 Button.inline(icon + " " + dl_info_format["format_note"] + " - " + file_size,  dl_info_text_url.replace("https://youtu.be/","") + "~" + dl_info_format["format_id"] + "~" + dl_info_format["ext"])
                             )
                         await loading.delete()
+                        thumbnail = dl_info["thumbnails"][dl_info_thumbnail_id]["url"]
+                        if thumbnail == None: 
+                            thumbnail = "./assets/nothumbnail.png"
                         await event.reply(
                             dl_info_text,
-                            file= dl_info["thumbnails"][dl_info_thumbnail_id]["url"],
+                            file= thumbnail,
                             parse_mode= "html",
                             buttons= dl_info_formats_buttons
                         )

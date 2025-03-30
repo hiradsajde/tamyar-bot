@@ -20,10 +20,11 @@ class youtube_handler :
         self.ext = ext 
         self.name = f"{str(int(time.time()))}{random.randrange(100000000,999999999)}"
     async def get_file(self):
+        proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') != None else ""
         if self.ext == "m4a":
-            proc = subprocess.Popen(["yt-dlp",self.url,"--proxy",f"socks5://{config['PROXY_IP']}:{config['PROXY_PORT']}","-o",f"./downloads/{self.name}/{self.title}.%(ext)s","-f",self.format_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            proc = subprocess.Popen(["yt-dlp",self.url,*proxy_handler.split(" "),"-o",f"./downloads/{self.name}/{self.title}.%(ext)s","-f",self.format_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         else: 
-            proc = subprocess.Popen(["yt-dlp",self.url,"--proxy",f"socks5://{config['PROXY_IP']}:{config['PROXY_PORT']}","-o",f"./downloads/{self.name}/{self.title}.%(ext)s","-f",f"{self.format_id}+bestaudio","--audio-multistreams","--video-multistreams","-S","res,ext:mp4"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            proc = subprocess.Popen(["yt-dlp",self.url,*proxy_handler.split(" "),"-o",f"./downloads/{self.name}/{self.title}.%(ext)s","-f",f"{self.format_id}+bestaudio","--audio-multistreams","--video-multistreams","-S","res,ext:mp4"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         line = 0
         result = [[]]
         last_complition_percentage = -1
@@ -41,13 +42,13 @@ class youtube_handler :
                     if last_complition_percentage != int(complition_percentage):
                         loadbar = "■" * int(complition_percentage // 10) + "□" * (10 - int(complition_percentage // 10))
                         for message in messages:
-                            message_text = "\n".join(message.text.split("\n")[:-2]) + "\n" + i18n.t("sentence.downloading") + "\n" + "✔️ **" + format(int(complition_percentage), '03d') + "%** " + loadbar + "\n" +"🆔 @Hiradsajde"
+                            message_text = "\n".join(message.text.split("\n")[:-2]) + "\n" + i18n.t("sentence.downloading") + "\n" + "✔️ **" + format(int(complition_percentage), '03d') + "%** " + loadbar + "\n" + config.get("MAIN_MENTION")
                             await message.edit(message_text)
                         last_complition_percentage = int(complition_percentage)
                         if complition_percentage == 100 :
                             files = self.get_files()
                             for file in files:
-                                message_text = "\n".join(message.text.split("\n")[:-2]) + "\n" + "🆔 @Hiradsajde"
+                                message_text = "\n".join(message.text.split("\n")[:-2]) + "\n" + config.get("MAIN_MENTION")
                                 last_complition_percentage = -1
                                 async def progress_callback(downloaded,total):
                                     nonlocal last_complition_percentage
@@ -55,7 +56,7 @@ class youtube_handler :
                                     if  last_complition_percentage != int(complition_percentage):
                                         last_complition_percentage = int(complition_percentage)
                                         loadbar = "■" * int(complition_percentage // 10) + "□" * (10 - int(complition_percentage // 10))
-                                        message_text = "\n".join(message.text.split("\n")[:-2]) + "\n" + i18n.t("sentence.uploading") + "\n" + f"✔️ **{format(int(complition_percentage), '03d')}%** "+ loadbar + "\n" + "🆔 @Hiradsajde"
+                                        message_text = "\n".join(message.text.split("\n")[:-2]) + "\n" + i18n.t("sentence.uploading") + "\n" + f"✔️ **{format(int(complition_percentage), '03d')}%** "+ loadbar + "\n" + config.get("MAIN_MENTION")
                                         if complition_percentage == 100 :
                                             await message.delete()    
                                             create_download(chat_id=self.chat_id,size=total,url=self.url)
