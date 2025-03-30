@@ -15,10 +15,10 @@ if config.get("PROXY_TYPE") != None:
     client = TelegramClient(
         config.get("SESSION_NAME"), 
         config.get("API_ID"), config.get("API_HASH"),
-        proxy=(config["PROXY_TYPE"], config["PROXY_IP"],config["PROXY_PORT"])
+        proxy=(config.get("PROXY_TYPE"), config.get("PROXY_IP"),config.get("PROXY_PORT"))
     )
 else :
     client = TelegramClient(
             config.get("SESSION_NAME"), 
-            config.get("API_ID"), config("API_HASH"),
+            config.get("API_ID"), config.get("API_HASH"),
     )
