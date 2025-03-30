@@ -60,7 +60,7 @@ def main():
                             captured_id = captured_id[0]
                         else: 
                             captured_id = parsed_url.path
-                        proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') != None else ""
+                        proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') != None else " "
                         try:
                             dl_info_json = subprocess.check_output(["yt-dlp","--force-generic", *proxy_handler.split(" ") , "-j",f"https://youtu.be/{captured_id}"])
                         except Exception: 

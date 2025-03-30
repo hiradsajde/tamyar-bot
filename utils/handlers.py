@@ -20,7 +20,7 @@ class youtube_handler :
         self.ext = ext 
         self.name = f"{str(int(time.time()))}{random.randrange(100000000,999999999)}"
     async def get_file(self):
-        proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') != None else ""
+        proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') != None else " "
         if self.ext == "m4a":
             proc = subprocess.Popen(["yt-dlp",self.url,*proxy_handler.split(" "),"-o",f"./downloads/{self.name}/{self.title}.%(ext)s","-f",self.format_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         else: 
