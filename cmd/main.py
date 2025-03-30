@@ -115,7 +115,7 @@ def main():
                             buttons= dl_info_formats_buttons
                         )
                     else :
-                        event.reply(i18n.t("sentence.not_supported"))
+                        await event.reply(i18n.t("sentence.not_supported"))
     @client.on(events.CallbackQuery(func=lambda e: e.is_private))
     async def callback_event_handler(event):
             if is_spam(event.chat_id , config["SPAM_DURATION"]):
