@@ -64,8 +64,8 @@ def main():
                         try:
                             dl_info_json = subprocess.check_output(["yt-dlp","--force-generic", *proxy_handler.split(" ") , "-j",f"https://youtu.be/{captured_id}"])
                         except Exception: 
-                            loading.delete()
-                            event.reply(i18n.t("sentence.error_happens"))
+                            await loading.delete()
+                            await event.reply(i18n.t("sentence.error_happens"))
                         dl_info = json.loads(dl_info_json)
                         dl_info_formats_filter = filter(lambda f: (
                             (
