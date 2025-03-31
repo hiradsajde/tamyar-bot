@@ -11,7 +11,7 @@ from utils.translation import i18n
 from sqlmodel import SQLModel 
 from database.models import engine
 from database.view_models import create_or_get_user, is_spam, get_daily_download , create_request, get_request
-from utils.definitions import is_participant
+from utils.definitions import is_participant, check_output
 from hurry.filesize import size
 from dotenv import load_dotenv
 from utils.config import config
@@ -72,8 +72,9 @@ def main():
                                 out.insert(2, proxy)
                                 get_thumb.insert(1, flag)
                                 get_thumb.insert(2, proxy)
-                            subprocess.check_output(get_thumb)
-                            dl_info_json = subprocess.check_output(out)
+                            async with client.action(event.chat_id , "photo"):
+                                await check_output(*get_thumb)
+                                dl_info_json = await check_output(*out)
                         except Exception as e:
                             print(e) 
                             await loading.delete()
@@ -143,6 +144,7 @@ def main():
                             parse_mode= "html",
                             buttons= dl_info_formats_buttons
                         )
+                        os.remove(f"{thumb_name}.jpg")
                     else :
                         await event.reply(i18n.t("sentence.not_supported"))
     @client.on(events.CallbackQuery(func=lambda e: e.is_private))

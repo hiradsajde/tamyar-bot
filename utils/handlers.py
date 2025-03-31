@@ -9,6 +9,7 @@ import requests
 from utils.config import client
 from utils.translation import i18n
 from database.view_models import create_download , get_request
+from telethon.tl.types import DocumentAttributeVideo, DocumentAttributeAudio
 from utils.config import config 
 
 class youtube_handler :
@@ -60,7 +61,7 @@ class youtube_handler :
                     caption = "🖊️ <u>" + self.file_info.title + "</u>" + "\n" +\
                         "<i>" + self.file_info.description + "</i>\n" +\
                         "🔗 https://youtu.be/" + self.file_info.file_id + "\n" +\
-                        "✔️ <b>" + str(sentence) + "</b> " + "\n" +\
+                        "<b>" + str(sentence) + "</b> " + "\n" +\
                         config.get("MAIN_MENTION")
                     for message in messages:
                         await message.edit(caption,parse_mode="html")
@@ -79,7 +80,7 @@ class youtube_handler :
                         last_complition_percentage = int(complition_percentage)
                         if complition_percentage == 100 :
                             files = [
-                                *glob.glob(f"./downloads/{self.name}/*.mp4"),
+                                *glob.glob(f"./downloads/{self.name}/{self.file_info.title}.mp4"),
                                 *glob.glob(f"./downloads/{self.name}/{self.file_info.title}.m4a")
                             ]
                             for file in files:
@@ -108,19 +109,32 @@ class youtube_handler :
                                         else:
                                             for message in messages:
                                                 await message.edit(caption,parse_mode="html")
-                                thumb = ".".join(file.split(".")[:-1]) + ".jpg"
+                                thumb = f"./downloads/{self.name}/{self.file_info.title}.jpg"
                                 for message in messages:
-                                    await client.send_file(
-                                        caption= caption,
-                                        entity = message.chat_id,
-                                        reply_to = message.reply_to.reply_to_msg_id, 
-                                        file = file,
-                                        thumb = thumb,
-                                        duration = self.file_info.duration,
-                                        progress_callback=progress_callback, 
-                                        parse_mode="html"
-                                    )
-                            self.delete()
+                                    if self.ext == "m4a": 
+                                        await client.send_file(
+                                            caption= caption,
+                                            entity = message.chat_id,
+                                            reply_to = message.reply_to.reply_to_msg_id, 
+                                            file = file,
+                                            progress_callback=progress_callback, 
+                                            parse_mode="html", 
+                                            attributes=(DocumentAttributeAudio(self.file_info.duration),)
+                                        )
+
+                                    else:
+                                        async with client.action(message.chat_id, "video"):
+                                            await client.send_file(
+                                                caption= caption,
+                                                entity = message.chat_id,
+                                                reply_to = message.reply_to.reply_to_msg_id, 
+                                                file = file,
+                                                thumb = thumb,
+                                                progress_callback=progress_callback, 
+                                                parse_mode="html", 
+                                                attributes=(DocumentAttributeVideo(self.file_info.duration,0,0),)
+                                            )
+                                        self.delete()
                         else :
                             for message in messages:
                                 try:
@@ -137,6 +151,7 @@ class youtube_handler :
         if len(files) > 0:
             for file in files :
                 os.remove(file)
+        if os.path.isdir(f"./downloads/{self.name}/") : 
             os.rmdir(f"./downloads/{self.name}/")
     def get_files(self):
         files = [file_name for file_name in glob.glob(f"./downloads/{self.name}/{self.file_info.title}.*") if not file_name.endswith(".part")]
@@ -145,5 +160,6 @@ class youtube_handler :
         try :
             await self.get_file()
         except Exception as e:
-            print(e)
             self.delete()
+            print(e)
+            
