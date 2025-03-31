@@ -68,7 +68,7 @@ class youtube_handler :
                                 
                 if "[download]" in result[line] and "%" in result[line]:
                     c_line_data = result[line].split("[download]")[1].split("at")[0].split("of")
-                    complition_percentage , size = float(c_line_data[0].strip().split("%")[0]) , c_line_data[1].strip()
+                    complition_percentage , _ = float(c_line_data[0].strip().split("%")[0]) , c_line_data[1].strip()
                     if last_complition_percentage != int(complition_percentage):
                         loadbar = "■" * int(complition_percentage // 10) + "□" * (10 - int(complition_percentage // 10))
                         caption = "🖊️ <u>" + self.file_info.title + "</u>" + "\n" +\
@@ -79,10 +79,7 @@ class youtube_handler :
                         config.get("MAIN_MENTION")
                         last_complition_percentage = int(complition_percentage)
                         if complition_percentage == 100 :
-                            files = [
-                                *glob.glob(f"./downloads/{self.name}/{self.file_info.title}.mp4"),
-                                *glob.glob(f"./downloads/{self.name}/{self.file_info.title}.m4a")
-                            ]
+                            files = self.get_target_files()
                             for file in files:
                                 last_complition_percentage = -1
                                 caption = "🖊️ <u>" + self.file_info.title + "</u>" + "\n" +\
@@ -148,13 +145,15 @@ class youtube_handler :
                 result[line].append(char)
     def delete(self):
         files = self.get_files()
-        if len(files) > 0:
-            for file in files :
-                os.remove(file)
-        if os.path.isdir(f"./downloads/{self.name}/") : 
-            os.rmdir(f"./downloads/{self.name}/")
+        for file in files :
+            os.remove(file)
+        if os.path.isdir(f"./downloads/{self.name}") : 
+            os.rmdir(f"./downloads/{self.name}")
     def get_files(self):
-        files = [file_name for file_name in glob.glob(f"./downloads/{self.name}/{self.file_info.title}.*") if not file_name.endswith(".part")]
+        files = glob.glob(f"./downloads/{self.name}/*") 
+        return files
+    def get_target_files(self):
+        files = [file_name for file_name in glob.glob(f"./downloads/{self.name}/*") if not (file_name.endswith(".part") or file_name.endswith(".jpg"))]
         return files
     async def do(self):
         try :
