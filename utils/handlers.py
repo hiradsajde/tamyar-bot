@@ -98,7 +98,7 @@ class youtube_handler :
                                         caption = "🖊️ <u>" + self.file_info.title + "</u>" + "\n" +\
                                         "<i>" + self.file_info.description + "</i>\n" +\
                                         "🔗 https://youtu.be/" + self.file_info.file_id + "\n" +\
-                                        "<b>" + i18n.t("sentence.uploading") + "</b>" + "\n" +\
+                                        "<b>" + i18n.t("sentence.uploading") + "</b> " + "\n" +\
                                         "✔️ <b>" + format(int(complition_percentage), '03d') + "%</b>" + loadbar + "\n" +\
                                         config.get("MAIN_MENTION")
                                         if complition_percentage == 100 :
