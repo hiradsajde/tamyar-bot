@@ -16,6 +16,7 @@ from hurry.filesize import size
 from dotenv import load_dotenv
 from utils.config import config
 from urllib.parse import urlparse, parse_qs
+from time import time 
 import asyncio 
 
 def main():
@@ -60,19 +61,26 @@ def main():
                             captured_id = captured_id[0]
                         else: 
                             captured_id = parsed_url.path
+                        thumb_name = f"./downloads/{str(event.chat_id) + str(time())}"
                         try:
                             proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') else None
                             out = ["yt-dlp","--cookies","./cookies.txt","-s","--print","%(.{title,description,formats,thumbnails,duration})#j",f"https://youtu.be/{captured_id}"]
+                            get_thumb = ["yt-dlp","--cookies","./cookies.txt","--skip-download","--convert-thumbnails","jpg", "--write-thumbnail", "-o" , f"{thumb_name}.%(ext)s" , f"https://youtu.be/{captured_id}"]
                             if proxy_handler: 
                                 flag , proxy = proxy_handler.split(" ")
                                 out.insert(1, flag)
                                 out.insert(2, proxy)
+                                get_thumb.insert(1, flag)
+                                get_thumb.insert(2, proxy)
+                            subprocess.check_output(get_thumb)
                             dl_info_json = subprocess.check_output(out)
                         except Exception as e:
                             print(e) 
                             await loading.delete()
                             await event.reply(i18n.t("sentence.error_happens"))
                             return
+                        if not os.path.isfile(f"{thumb_name}.jpg"):
+                            thumb_name = "./assets/nothumbnail.png"
                         dl_info = json.loads(dl_info_json)
                         dl_info_formats_filter = filter(lambda f: (
                             (
@@ -96,11 +104,7 @@ def main():
                         "<b>👇 " + i18n.t("sentence.choose_format") + "</b>" + "\n" +\
                         config.get("MAIN_MENTION")
                         dl_info_thumbnail_id = -1 
-                        while dl_info["thumbnails"][dl_info_thumbnail_id]["url"].split(".")[-1] != "jpg":
-                            dl_info_thumbnail_id -= 1
-                        file_id = dl_info_text_url.replace("https://youtu.be/","")
-                        thumbnail = dl_info["thumbnails"][dl_info_thumbnail_id]["url"]
-                        create_request(chat_id=event.chat_id,title=dl_info["title"],description=dl_info_text_description,file_id=file_id,duration=dl_info["duration"],thumbnail=thumbnail)
+                        create_request(chat_id=event.chat_id,title=dl_info["title"],description=dl_info_text_description,file_id=captured_id,duration=dl_info["duration"],thumbnail=thumb_name)
                         dl_info_formats_dict = {}
                         max_audio_size = 0
                         for dl_info_format in dl_info_formats_filter:
@@ -130,14 +134,12 @@ def main():
                                 case "m4a":
                                     icon = "🔉"
                             dl_info_formats_buttons[i//2].append(
-                                Button.inline(icon + " " + dl_info_format["format_note"] + " - " + file_size,  dl_info_text_url.replace("https://youtu.be/","") + "~" + dl_info_format["format_id"] + "~" + dl_info_format["ext"])
+                                Button.inline(icon + " " + dl_info_format["format_note"] + " - " + file_size,  captured_id + "_" + dl_info_format["format_id"] + "_" + dl_info_format["ext"])
                             )
                         await loading.delete()
-                        if thumbnail == None: 
-                            thumbnail = "./assets/nothumbnail.png"
                         await event.reply(
                             dl_info_text,
-                            file= thumbnail,
+                            file= await client.upload_file(f"{thumb_name}.jpg"),
                             parse_mode= "html",
                             buttons= dl_info_formats_buttons
                         )
@@ -147,7 +149,7 @@ def main():
     async def callback_event_handler(event):
             if is_spam(event.chat_id , config["SPAM_DURATION"]):
                 return
-            file_id , format_id, ext = event.data.decode("utf-8").split("~")
+            file_id , format_id, ext = event.data.decode("utf-8").split("_")
             file_info = get_request(file_id,event.chat_id)
             message = await event.get_message()
             caption = "🖊️ <u>" + file_info.title + "</u>" + "\n" +\
