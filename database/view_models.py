@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Session, select 
-from database.models import engine , User, Downlaod
+from database.models import engine , User, Downlaod, Request
 from time import time 
 
 with Session(engine) as session: 
@@ -29,3 +29,15 @@ with Session(engine) as session:
         for download in downloads:
             total += download.size
         return total
+    def create_request(chat_id,title,description,file_id,duration,thumbnail):
+        session.add(Request(chat_id=chat_id, title=title, description=description,file_id=file_id,duration=duration,thumbnail=thumbnail))
+        session.commit()
+    def get_request(file_id,chat_id):
+        statement = select(Request).where(Request.file_id == file_id).where(Request.chat_id == chat_id)
+        request = session.exec(statement).first()
+        return request
+    def delete_request(file_id,chat_id):
+        statement = select(Request).where(Request.file_id == file_id).where(Request.chat_id == chat_id)
+        request = session.exec(statement).first()
+        session.delete(request)
+        session.commit()

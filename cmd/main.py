@@ -9,8 +9,8 @@ from utils.handlers import youtube_handler
 from utils.config import client
 from utils.translation import i18n
 from sqlmodel import SQLModel 
-from database.models import engine , User
-from database.view_models import create_or_get_user, is_spam, get_daily_download
+from database.models import engine
+from database.view_models import create_or_get_user, is_spam, get_daily_download , create_request, get_request
 from utils.definitions import is_participant
 from hurry.filesize import size
 from dotenv import load_dotenv
@@ -32,7 +32,7 @@ def main():
                 channels.append({
                         "name" : name,
                         "url": url,
-                        "id" : id,                       "id": -1001594111683, 
+                        "id" : int(id),
                 })
 
             channels_buttons = [] 
@@ -60,12 +60,19 @@ def main():
                             captured_id = captured_id[0]
                         else: 
                             captured_id = parsed_url.path
-                        proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') != None else " "
                         try:
-                            dl_info_json = subprocess.check_output(["yt-dlp","--force-generic", *proxy_handler.split(" ") , "-j",f"https://youtu.be/{captured_id}"])
-                        except Exception: 
+                            proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') else None
+                            out = ["yt-dlp","--cookies","./cookies.txt","--print","%(.{title,description,formats,thumbnails,duration})#j",f"https://youtu.be/{captured_id}"]
+                            if proxy_handler: 
+                                flag , proxy = proxy_handler.split(" ")
+                                out.insert(1, flag)
+                                out.insert(2, proxy)
+                            dl_info_json = subprocess.check_output(out)
+                        except Exception as e:
+                            print(e) 
                             await loading.delete()
                             await event.reply(i18n.t("sentence.error_happens"))
+                            return
                         dl_info = json.loads(dl_info_json)
                         dl_info_formats_filter = filter(lambda f: (
                             (
@@ -78,16 +85,22 @@ def main():
                             )
                             ) , dl_info["formats"])
                         dl_info_text_description = dl_info["description"][:50]
-                        dl_info_text_url = dl_info["webpage_url"].replace("https://www.youtube.com/watch?v=","https://youtu.be/")
+                        dl_info_text_url = event.text.replace("https://www.youtube.com/watch?v=","https://youtu.be/")
+
+                        
                         if(len(dl_info_text_description) >= 49):
                             dl_info_text_description += "..."
                         dl_info_text = "🖊️ <u>" + dl_info["title"] + "</u>" + "\n" +\
                         "<i>" + dl_info_text_description + "</i>\n" +\
                         "🔗 " + dl_info_text_url + "\n" +\
-                        "<b>👇 " + i18n.t("sentence.choose_format") + "</b>"
+                        "<b>👇 " + i18n.t("sentence.choose_format") + "</b>" + "\n" +\
+                        config.get("MAIN_MENTION")
                         dl_info_thumbnail_id = -1 
                         while dl_info["thumbnails"][dl_info_thumbnail_id]["url"].split(".")[-1] != "jpg":
-                            dl_info_thumbnail_id-=1
+                            dl_info_thumbnail_id -= 1
+                        file_id = dl_info_text_url.replace("https://youtu.be/","")
+                        thumbnail = dl_info["thumbnails"][dl_info_thumbnail_id]["url"]
+                        create_request(chat_id=event.chat_id,title=dl_info["title"],description=dl_info_text_description,file_id=file_id,duration=dl_info["duration"],thumbnail=thumbnail)
                         dl_info_formats_dict = {}
                         max_audio_size = 0
                         for dl_info_format in dl_info_formats_filter:
@@ -106,11 +119,11 @@ def main():
                         for _ in range(dl_info_format_buttons_lines):
                             dl_info_formats_buttons.append([]) 
                         for i , dl_info_format in enumerate(dl_info_formats):
-                            icon = "" 
                             if dl_info_format["ext"] == "m4a":
                                 file_size = size(dl_info_format["filesize"])
                             else :
                                 file_size = size(dl_info_format["filesize"] + max_audio_size)
+                            icon = "" 
                             match(dl_info_format["ext"]):
                                 case "mp4":
                                     icon = "📹" 
@@ -120,7 +133,6 @@ def main():
                                 Button.inline(icon + " " + dl_info_format["format_note"] + " - " + file_size,  dl_info_text_url.replace("https://youtu.be/","") + "~" + dl_info_format["format_id"] + "~" + dl_info_format["ext"])
                             )
                         await loading.delete()
-                        thumbnail = dl_info["thumbnails"][dl_info_thumbnail_id]["url"]
                         if thumbnail == None: 
                             thumbnail = "./assets/nothumbnail.png"
                         await event.reply(
@@ -135,12 +147,22 @@ def main():
     async def callback_event_handler(event):
             if is_spam(event.chat_id , config["SPAM_DURATION"]):
                 return
-            message = await event.get_message()
-            caption = "\n".join(message.text.split("\n")[:-1]) + "\n" + "**" +  i18n.t("sentence.loading") + "**"
             file_id , format_id, ext = event.data.decode("utf-8").split("~")
-            title = "".join(message.text.split("\n")[0][1:]).replace("*","").strip()
-            await event.edit(caption)
-            ytd = youtube_handler(message.chat_id,message.id,f"https://youtu.be/{file_id}",title,format_id,ext)
+            file_info = get_request(file_id,event.chat_id)
+            message = await event.get_message()
+            caption = "🖊️ <u>" + file_info.title + "</u>" + "\n" +\
+                "<i>" + file_info.description + "</i>\n" +\
+                "🔗 https://youtu.be/" + file_info.file_id + "\n" +\
+                "<b>" + i18n.t("sentence.loading") + "</b>" + "\n" +\
+                config.get("MAIN_MENTION")
+            await event.edit(caption,parse_mode="html")
+            ytd = youtube_handler(
+                message.chat_id,
+                message.id,
+                file_id,
+                format_id,
+                ext
+            )
             loop = asyncio.get_event_loop()
             loop.create_task(ytd.do())
 if __name__ == "__main__":

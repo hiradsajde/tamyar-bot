@@ -315,3 +315,5 @@ pyrightconfig.json
 *.session
 *.session-journal
 *.db
+
+cookies.txt
