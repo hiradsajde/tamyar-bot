@@ -6,8 +6,9 @@ with Session(engine) as session:
     def create_or_get_user(chat_id):
         statement = select(User).where(User.chat_id == chat_id) 
         user = session.exec(statement).first()
-        if user == None: 
-            session.add(User(chat_id=chat_id, lastmessage=round(time(),2)))
+        if user == None:
+            user = User(chat_id=chat_id, lastmessage=round(time(),2)) 
+            session.add(user)
             session.commit()
         return user 
     def is_spam(chat_id,delay): 
