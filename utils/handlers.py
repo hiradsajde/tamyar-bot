@@ -10,6 +10,7 @@ from utils.config import client
 from utils.translation import i18n
 from database.view_models import create_download , get_request
 from telethon.tl.types import DocumentAttributeVideo, DocumentAttributeAudio
+from utils.definitions import ytdlp_sentence
 from utils.config import config 
 
 class youtube_handler :
@@ -46,18 +47,7 @@ class youtube_handler :
                 result[line] = "".join(result[line])
                 if "[youtube]" in result[line]:
                     c_line_data = result[line] 
-                    if "Extracting URL" in c_line_data: 
-                        sentence = i18n.t("sentence.extracting_url")
-                    elif "Downloading webpage" in c_line_data: 
-                        sentence = i18n.t("sentence.downloading_webpage")
-                    elif "Downloading tv client config" in c_line_data: 
-                        sentence = i18n.t("sentence.downloading_tv_client_config")
-                    elif "Downloading player" in c_line_data: 
-                        sentence = i18n.t("sentence.downloading_player")
-                    elif "Downloading tv player" in c_line_data:
-                        sentence = i18n.t("sentence.downloadingـtvـplayer")
-                    else :
-                        sentence = ""
+                    sentence = ytdlp_sentence(c_line_data)
                     caption = "🖊️ <u>" + self.file_info.title + "</u>" + "\n" +\
                         "<i>" + self.file_info.description + "</i>\n" +\
                         "🔗 https://youtu.be/" + self.file_info.file_id + "\n" +\

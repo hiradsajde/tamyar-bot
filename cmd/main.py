@@ -11,7 +11,7 @@ from utils.translation import i18n
 from sqlmodel import SQLModel 
 from database.models import engine
 from database.view_models import create_or_get_user, is_spam, get_daily_download , create_request, get_request
-from utils.definitions import is_participant, check_output
+from utils.definitions import is_participant, check_output , ytdlp_sentence
 from hurry.filesize import size
 from dotenv import load_dotenv
 from utils.config import config
@@ -22,7 +22,7 @@ import asyncio
 def main():
     @client.on(events.NewMessage(func=lambda e: e.is_private))
     async def text_event_handler(event):
-            user = create_or_get_user(event.chat_id)
+            create_or_get_user(event.chat_id)
             if is_spam(event.chat_id , config["SPAM_DURATION"]):
                 return
             
@@ -65,7 +65,7 @@ def main():
                         try:
                             proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') else None
                             out = ["yt-dlp","--cookies","./cookies.txt","-s","--print","%(.{title,description,formats,thumbnails,duration})#j",f"https://youtu.be/{captured_id}"]
-                            get_thumb = ["yt-dlp","--cookies","./cookies.txt","--skip-download","--convert-thumbnails","jpg", "--write-thumbnail", "-o" , f"{thumb_name}.%(ext)s" , f"https://youtu.be/{captured_id}"]
+                            get_thumb = ["yt-dlp","--extractor-args" , "youtube:player_skip=webpage,configs","--no-check-formats","--cookies","./cookies.txt","--skip-download","--convert-thumbnails","jpg", "--write-thumbnail", "-o" , f"{thumb_name}.%(ext)s" , f"https://youtu.be/{captured_id}"]
                             if proxy_handler: 
                                 flag , proxy = proxy_handler.split(" ")
                                 out.insert(1, flag)
@@ -81,7 +81,7 @@ def main():
                             await event.reply(i18n.t("sentence.error_happens"))
                             return
                         if not os.path.isfile(f"{thumb_name}.jpg"):
-                            thumb_name = "./assets/nothumbnail.png"
+                            thumb_name = "./assets/nothumbnail"
                         dl_info = json.loads(dl_info_json)
                         dl_info_formats_filter = filter(lambda f: (
                             (

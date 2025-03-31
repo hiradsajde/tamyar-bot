@@ -1,3 +1,4 @@
+import i18n
 import asyncio
 from telethon import errors
 from utils.config import client
@@ -19,3 +20,17 @@ async def check_output(*args, **kwargs):
     stdout_data, stderr_data = await p.communicate()
     if p.returncode == 0:
         return stdout_data
+def ytdlp_sentence(data):
+    if "Extracting URL" in data: 
+        sentence = i18n.t("sentence.extracting_url")
+    elif "Downloading webpage" in data: 
+        sentence = i18n.t("sentence.downloading_webpage")
+    elif "Downloading tv client config" in data: 
+        sentence = i18n.t("sentence.downloading_tv_client_config")
+    elif "Downloading player" in data: 
+        sentence = i18n.t("sentence.downloading_player")
+    elif "Downloading tv player" in data:
+        sentence = i18n.t("sentence.downloadingـtvـplayer")
+    else :
+        sentence = ""
+    return sentence
