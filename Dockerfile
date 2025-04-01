@@ -1,16 +1,13 @@
-FROM ubuntu:24.04
+FROM python:3.10-slim 
 
 WORKDIR /usr/src/app 
 
 RUN apt update 
-RUN apt install ffmpeg python3 python3-pip wget curl -y
+RUN apt install ffmpeg -y
 
 COPY ./requirements.txt ./ 
-
-RUN pip install --break-system-packages -r requirements.txt 
+RUN pip install --no-cache-dir -r requirements.txt 
 
 COPY . . 
 
-RUN wget git.io/warp.sh
-
-ENTRYPOINT ["./entrypoint.sh"]
+CMD ["python" , "-m" ,"cmd.main"]
