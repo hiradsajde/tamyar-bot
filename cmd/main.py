@@ -31,105 +31,108 @@ def main():
                 case "/start": 
                     await event.reply(i18n.t("sentence.welcome"))
                 case _ :
-                    if re.match(r"http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?",event.text):
-                        user_daily_download = get_daily_download(event.chat_id)
-                        if user_daily_download > int(config.get("DAILY_DOWNLOAD_LIMIT")): 
-                            await event.reply(i18n.t("sentence.max_limit_excited"))
-                            return
-                        loading = await event.reply("🌕")
-                        parsed_url = urlparse(event.text)
-                        captured_id = parse_qs(parsed_url.query).get('v')
-                        if captured_id :
-                            captured_id = captured_id[0]
-                        else: 
-                            captured_id = parsed_url.path.replace("/" , "")
-                        thumb_name = f"./downloads/{str(event.chat_id) + str(time())}"
-                        try:
-                            proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') else None
-                            out = ["yt-dlp","--cookies","./cookies.txt","-s","--print","%(.{title,description,formats,thumbnails,duration})#j",f"https://youtu.be/{captured_id}"]
-                            get_thumb = ["yt-dlp","--extractor-args" , "youtube:player_skip=webpage,configs","--no-check-formats","--cookies","./cookies.txt","--skip-download","--convert-thumbnails","jpg", "--write-thumbnail", "-o" , f"{thumb_name}.%(ext)s" , f"https://youtu.be/{captured_id}"]
-                            if proxy_handler: 
-                                flag , proxy = proxy_handler.split(" ")
-                                out.insert(1, flag)
-                                out.insert(2, proxy)
-                                get_thumb.insert(1, flag)
-                                get_thumb.insert(2, proxy)
-                            async with client.action(event.chat_id , "photo"):
-                                await check_output(*get_thumb)
-                                dl_info_json = await check_output(*out)
-                        except Exception as e:
-                            print(e) 
+                    if re.match(r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)",event.text):
+                        if re.match(r"http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?",event.text):
+                            user_daily_download = get_daily_download(event.chat_id)
+                            if user_daily_download > int(config.get("DAILY_DOWNLOAD_LIMIT")): 
+                                await event.reply(i18n.t("sentence.max_limit_excited"))
+                                return
+                            loading = await event.reply("🌕")
+                            parsed_url = urlparse(event.text)
+                            captured_id = parse_qs(parsed_url.query).get('v')
+                            if captured_id :
+                                captured_id = captured_id[0]
+                            else: 
+                                captured_id = parsed_url.path.replace("/" , "")
+                            thumb_name = f"./downloads/{str(event.chat_id) + str(time())}"
+                            try:
+                                proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') else None
+                                out = ["yt-dlp","--cookies","./cookies.txt","-s","--print","%(.{title,description,formats,thumbnails,duration})#j",f"https://youtu.be/{captured_id}"]
+                                get_thumb = ["yt-dlp","--extractor-args" , "youtube:player_skip=webpage,configs","--no-check-formats","--cookies","./cookies.txt","--skip-download","--convert-thumbnails","jpg", "--write-thumbnail", "-o" , f"{thumb_name}.%(ext)s" , f"https://youtu.be/{captured_id}"]
+                                if proxy_handler: 
+                                    flag , proxy = proxy_handler.split(" ")
+                                    out.insert(1, flag)
+                                    out.insert(2, proxy)
+                                    get_thumb.insert(1, flag)
+                                    get_thumb.insert(2, proxy)
+                                async with client.action(event.chat_id , "photo"):
+                                    await check_output(*get_thumb)
+                                    dl_info_json = await check_output(*out)
+                            except Exception as e:
+                                print(e) 
+                                await loading.delete()
+                                await event.reply(i18n.t("sentence.error_happens"))
+                                return
+                            if not os.path.isfile(f"{thumb_name}.jpg"):
+                                thumb_name = "./assets/nothumbnail"
+                            dl_info = json.loads(dl_info_json)
+                            dl_info_formats_filter = filter(lambda f: (
+                                (
+                                (f["ext"] == "mp4" and f["video_ext"] == "mp4") or 
+                                (f["ext"] == "m4a" and f["audio_ext"] == "m4a")
+                                ) and (
+                                    f["protocol"] == "https"
+                                ) and (
+                                    int(config.get("DAILY_DOWNLOAD_LIMIT")) - user_daily_download > int(f["filesize"]) if f["filesize"] != None else 0
+                                )
+                                ) , dl_info["formats"])
+                            dl_info_text_description = dl_info["description"][:50]
+                            dl_info_text_url = f"https://youtu.be/{captured_id}"
+                            print(dl_info_text_url) 
+                            print(captured_id)
+                            
+                            if(len(dl_info_text_description) >= 49):
+                                dl_info_text_description += "..."
+                            dl_info_text = "🖊️ <u>" + dl_info["title"] + "</u>" + "\n" +\
+                            "<i>" + dl_info_text_description + "</i>\n" +\
+                            "🔗 " + dl_info_text_url + "\n" +\
+                            "<b>👇 " + i18n.t("sentence.choose_format") + "</b>" + "\n" +\
+                            config.get("MAIN_MENTION")
+                            dl_info_thumbnail_id = -1 
+                            create_request(chat_id=event.chat_id,title=dl_info["title"],description=dl_info_text_description,file_id=captured_id,duration=dl_info["duration"],thumbnail=thumb_name)
+                            dl_info_formats_dict = {}
+                            max_audio_size = 0
+                            for dl_info_format in dl_info_formats_filter:
+                                dl_info_formats_dict[dl_info_format["format_note"]] = dl_info_format
+                                if dl_info_format["filesize"] > max_audio_size and dl_info_format["ext"] == "m4a":
+                                    max_audio_size = dl_info_format["filesize"]
+                            dl_info_formats = dl_info_formats_dict.values()
+                            if len(dl_info_formats) == 0 :
+                                await event.reply(i18n.t("sentence.not_enough_credit"))
+                                await loading.delete()
+                                return
+                            dl_info_formats_buttons = []
+                            dl_info_format_buttons_lines = len(dl_info_formats) // 2
+                            if len(dl_info_formats) % 2 != 0 :
+                                dl_info_format_buttons_lines += 1
+                            for _ in range(dl_info_format_buttons_lines):
+                                dl_info_formats_buttons.append([]) 
+                            for i , dl_info_format in enumerate(dl_info_formats):
+                                if dl_info_format["ext"] == "m4a":
+                                    file_size = size(dl_info_format["filesize"])
+                                else :
+                                    file_size = size(dl_info_format["filesize"] + max_audio_size)
+                                icon = "" 
+                                match(dl_info_format["ext"]):
+                                    case "mp4":
+                                        icon = "📹" 
+                                    case "m4a":
+                                        icon = "🔉"
+                                dl_info_formats_buttons[i//2].append(
+                                    Button.inline(icon + " " + dl_info_format["format_note"] + " - " + file_size, captured_id + "_" + dl_info_format["format_id"] + "_" + dl_info_format["ext"])
+                                )
                             await loading.delete()
-                            await event.reply(i18n.t("sentence.error_happens"))
-                            return
-                        if not os.path.isfile(f"{thumb_name}.jpg"):
-                            thumb_name = "./assets/nothumbnail"
-                        dl_info = json.loads(dl_info_json)
-                        dl_info_formats_filter = filter(lambda f: (
-                            (
-                            (f["ext"] == "mp4" and f["video_ext"] == "mp4") or 
-                            (f["ext"] == "m4a" and f["audio_ext"] == "m4a")
-                            ) and (
-                                f["protocol"] == "https"
-                            ) and (
-                                int(config.get("DAILY_DOWNLOAD_LIMIT")) - user_daily_download > int(f["filesize"]) if f["filesize"] != None else 0
+                            await event.reply(
+                                dl_info_text,
+                                file= await client.upload_file(f"{thumb_name}.jpg"),
+                                parse_mode= "html",
+                                buttons= dl_info_formats_buttons
                             )
-                            ) , dl_info["formats"])
-                        dl_info_text_description = dl_info["description"][:50]
-                        dl_info_text_url = f"https://youtu.be/{captured_id}"
-                        print(dl_info_text_url) 
-                        print(captured_id)
-                        
-                        if(len(dl_info_text_description) >= 49):
-                            dl_info_text_description += "..."
-                        dl_info_text = "🖊️ <u>" + dl_info["title"] + "</u>" + "\n" +\
-                        "<i>" + dl_info_text_description + "</i>\n" +\
-                        "🔗 " + dl_info_text_url + "\n" +\
-                        "<b>👇 " + i18n.t("sentence.choose_format") + "</b>" + "\n" +\
-                        config.get("MAIN_MENTION")
-                        dl_info_thumbnail_id = -1 
-                        create_request(chat_id=event.chat_id,title=dl_info["title"],description=dl_info_text_description,file_id=captured_id,duration=dl_info["duration"],thumbnail=thumb_name)
-                        dl_info_formats_dict = {}
-                        max_audio_size = 0
-                        for dl_info_format in dl_info_formats_filter:
-                            dl_info_formats_dict[dl_info_format["format_note"]] = dl_info_format
-                            if dl_info_format["filesize"] > max_audio_size and dl_info_format["ext"] == "m4a":
-                                max_audio_size = dl_info_format["filesize"]
-                        dl_info_formats = dl_info_formats_dict.values()
-                        if len(dl_info_formats) == 0 :
-                            await event.reply(i18n.t("sentence.not_enough_credit"))
-                            await loading.delete()
-                            return
-                        dl_info_formats_buttons = []
-                        dl_info_format_buttons_lines = len(dl_info_formats) // 2
-                        if len(dl_info_formats) % 2 != 0 :
-                            dl_info_format_buttons_lines += 1
-                        for _ in range(dl_info_format_buttons_lines):
-                            dl_info_formats_buttons.append([]) 
-                        for i , dl_info_format in enumerate(dl_info_formats):
-                            if dl_info_format["ext"] == "m4a":
-                                file_size = size(dl_info_format["filesize"])
-                            else :
-                                file_size = size(dl_info_format["filesize"] + max_audio_size)
-                            icon = "" 
-                            match(dl_info_format["ext"]):
-                                case "mp4":
-                                    icon = "📹" 
-                                case "m4a":
-                                    icon = "🔉"
-                            dl_info_formats_buttons[i//2].append(
-                                Button.inline(icon + " " + dl_info_format["format_note"] + " - " + file_size, captured_id + "_" + dl_info_format["format_id"] + "_" + dl_info_format["ext"])
-                            )
-                        await loading.delete()
-                        await event.reply(
-                            dl_info_text,
-                            file= await client.upload_file(f"{thumb_name}.jpg"),
-                            parse_mode= "html",
-                            buttons= dl_info_formats_buttons
-                        )
-                        os.remove(f"{thumb_name}.jpg")
+                            os.remove(f"{thumb_name}.jpg")
+                        else :
+                            await event.reply(i18n.t("sentence.not_supported"))
                     else :
-                        await event.reply(i18n.t("sentence.not_supported"))
+                        await event.reply(i18n.t("sentence.invalid_url"),parse_mode="html")
     @client.on(events.CallbackQuery(func=lambda e: e.is_private))
     async def callback_event_handler(event):
             if is_spam(event.chat_id , config["SPAM_DURATION"]):
