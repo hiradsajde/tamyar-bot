@@ -43,20 +43,16 @@ def main():
                             if captured_id :
                                 captured_id = captured_id[0]
                             else: 
-                                captured_id = parsed_url.path.replace("/" , "")
+                                captured_id = parsed_url.path.split("/")[-1]
                             thumb_name = f"./downloads/{str(event.chat_id) + str(time())}"
                             try:
                                 proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') else None
-                                out = ["yt-dlp","--cookies","./cookies.txt","-s","--print","%(.{title,description,formats,thumbnails,duration})#j",f"https://youtu.be/{captured_id}"]
-                                get_thumb = ["yt-dlp","--extractor-args" , "youtube:player_skip=webpage,configs","--no-check-formats","--cookies","./cookies.txt","--skip-download","--convert-thumbnails","jpg", "--write-thumbnail", "-o" , f"{thumb_name}.%(ext)s" , f"https://youtu.be/{captured_id}"]
+                                out = ["yt-dlp","--cookies","./cookies.txt","-s","--print","%(.{title,description,formats,thumbnails,duration})#j","--convert-thumbnails","jpg", "--write-thumbnail", "-o" , f"{thumb_name}.%(ext)s","--no-simulate","--skip-download",f"https://youtu.be/{captured_id}"]
                                 if proxy_handler: 
                                     flag , proxy = proxy_handler.split(" ")
                                     out.insert(1, flag)
                                     out.insert(2, proxy)
-                                    get_thumb.insert(1, flag)
-                                    get_thumb.insert(2, proxy)
                                 async with client.action(event.chat_id , "photo"):
-                                    await check_output(*get_thumb)
                                     dl_info_json = await check_output(*out)
                             except Exception as e:
                                 print(e) 
