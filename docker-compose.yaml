@@ -7,7 +7,7 @@ services:
     networks:
       - tamyar
     depends_on:
-      - tor
+      - warp
   warp:
     image: caomingjun/warp
     container_name: warp
@@ -34,3 +34,5 @@ services:
       # - net.ipv6.conf.all.accept_ra=2
     volumes:
       - ./data:/var/lib/cloudflare-warp
+networks:
+  tamyar:
