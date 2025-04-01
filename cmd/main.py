@@ -11,7 +11,7 @@ from utils.translation import i18n
 from sqlmodel import SQLModel 
 from database.models import engine
 from database.view_models import create_or_get_user, is_spam, get_daily_download , create_request, get_request
-from utils.definitions import is_participant, check_output , ytdlp_sentence
+from utils.definitions import is_participant, check_output , ytdlp_sentence , is_joined_sponsers
 from hurry.filesize import size
 from dotenv import load_dotenv
 from utils.config import config
@@ -25,26 +25,8 @@ def main():
             create_or_get_user(event.chat_id)
             if is_spam(event.chat_id , config["SPAM_DURATION"]):
                 return
-            
-            channels = []
-            get_channels = config["CHANNELS"].split("~")
-            for get_channel in get_channels:
-                name , url , id = get_channel.split("|")
-                channels.append({
-                        "name" : name,
-                        "url": url,
-                        "id" : int(id),
-                })
-
-            channels_buttons = [] 
-            for channel in channels: 
-                channels_buttons.append(
-                    [Button.url(channel["name"], channel["url"])]
-                )
-            for channel in channels:
-                if not await is_participant(channel["id"],event.chat_id): 
-                    await event.reply(i18n.t("sentence.join_sponsers"),buttons=channels_buttons)
-                    return
+            if not await is_joined_sponsers(event,"send"): 
+                return 
             match(event.text):
                 case "/start": 
                     await event.reply(i18n.t("sentence.welcome"))
@@ -60,7 +42,7 @@ def main():
                         if captured_id :
                             captured_id = captured_id[0]
                         else: 
-                            captured_id = parsed_url.path
+                            captured_id = parsed_url.path.replace("/" , "")
                         thumb_name = f"./downloads/{str(event.chat_id) + str(time())}"
                         try:
                             proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') else None
@@ -94,8 +76,9 @@ def main():
                             )
                             ) , dl_info["formats"])
                         dl_info_text_description = dl_info["description"][:50]
-                        dl_info_text_url = event.text.replace("https://www.youtube.com/watch?v=","https://youtu.be/")
-
+                        dl_info_text_url = f"https://youtu.be/{captured_id}"
+                        print(dl_info_text_url) 
+                        print(captured_id)
                         
                         if(len(dl_info_text_description) >= 49):
                             dl_info_text_description += "..."
@@ -135,7 +118,7 @@ def main():
                                 case "m4a":
                                     icon = "🔉"
                             dl_info_formats_buttons[i//2].append(
-                                Button.inline(icon + " " + dl_info_format["format_note"] + " - " + file_size,  captured_id + "_" + dl_info_format["format_id"] + "_" + dl_info_format["ext"])
+                                Button.inline(icon + " " + dl_info_format["format_note"] + " - " + file_size, captured_id + "_" + dl_info_format["format_id"] + "_" + dl_info_format["ext"])
                             )
                         await loading.delete()
                         await event.reply(
@@ -151,24 +134,32 @@ def main():
     async def callback_event_handler(event):
             if is_spam(event.chat_id , config["SPAM_DURATION"]):
                 return
-            file_id , format_id, ext = event.data.decode("utf-8").split("_")
-            file_info = get_request(file_id,event.chat_id)
-            message = await event.get_message()
-            caption = "🖊️ <u>" + file_info.title + "</u>" + "\n" +\
-                "<i>" + file_info.description + "</i>\n" +\
-                "🔗 https://youtu.be/" + file_info.file_id + "\n" +\
-                "<b>" + i18n.t("sentence.loading") + "</b>" + "\n" +\
-                config.get("MAIN_MENTION")
-            await event.edit(caption,parse_mode="html")
-            ytd = youtube_handler(
-                message.chat_id,
-                message.id,
-                file_id,
-                format_id,
-                ext
-            )
-            loop = asyncio.get_event_loop()
-            loop.create_task(ytd.do())
+            data = event.data.decode("utf-8")
+            match(data):
+                case "is_joined":
+                    if not await is_joined_sponsers(event,"answer"): 
+                        return
+                    else : 
+                        await event.edit(i18n.t("sentence.welcome"))
+                case _ :
+                    file_id , format_id, ext = data.split("_")
+                    file_info = get_request(file_id,event.chat_id)
+                    message = await event.get_message()
+                    caption = "🖊️ <u>" + file_info.title + "</u>" + "\n" +\
+                        "<i>" + file_info.description + "</i>\n" +\
+                        "🔗 https://youtu.be/" + file_info.file_id + "\n" +\
+                        "<b>" + i18n.t("sentence.loading") + "</b>" + "\n" +\
+                        config.get("MAIN_MENTION")
+                    await event.edit(caption,parse_mode="html")
+                    ytd = youtube_handler(
+                        message.chat_id,
+                        message.id,
+                        file_id,
+                        format_id,
+                        ext
+                    )
+                    loop = asyncio.get_event_loop()
+                    loop.create_task(ytd.do())
 if __name__ == "__main__":
     SQLModel.metadata.create_all(engine)
     load_dotenv()
