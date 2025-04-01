@@ -78,8 +78,6 @@ def main():
                                 ) , dl_info["formats"])
                             dl_info_text_description = dl_info["description"][:50]
                             dl_info_text_url = f"https://youtu.be/{captured_id}"
-                            print(dl_info_text_url) 
-                            print(captured_id)
                             
                             if(len(dl_info_text_description) >= 49):
                                 dl_info_text_description += "..."
@@ -119,7 +117,7 @@ def main():
                                     case "m4a":
                                         icon = "🔉"
                                 dl_info_formats_buttons[i//2].append(
-                                    Button.inline(icon + " " + dl_info_format["format_note"] + " - " + file_size, captured_id + "_" + dl_info_format["format_id"] + "_" + dl_info_format["ext"])
+                                    Button.inline(icon + " " + dl_info_format["format_note"] + " - " + file_size, captured_id + "~" + dl_info_format["format_id"] + "~" + dl_info_format["ext"])
                                 )
                             await loading.delete()
                             await event.reply(
@@ -145,7 +143,7 @@ def main():
                     else : 
                         await event.edit(i18n.t("sentence.welcome"))
                 case _ :
-                    file_id , format_id, ext = data.split("_")
+                    file_id , format_id, ext = data.split("~")
                     file_info = get_request(file_id,event.chat_id)
                     message = await event.get_message()
                     caption = "🖊️ <u>" + file_info.title + "</u>" + "\n" +\
