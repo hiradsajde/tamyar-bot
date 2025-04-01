@@ -108,6 +108,8 @@ class youtube_handler :
                                             parse_mode="html", 
                                             attributes=(DocumentAttributeAudio(self.file_info.duration),)
                                         )
+                                        self.delete()
+                                        
 
                                     else:
                                         async with client.action(message.chat_id, "video"):
@@ -126,9 +128,9 @@ class youtube_handler :
                             for message in messages:
                                 try:
                                     await message.edit(caption,parse_mode="html")
-                                except Exception: 
+                                except Exception as e:
+                                    print(e) 
                                     continue
-                    await asyncio.sleep(0.5)
                 result.append([])
                 line += 1 
             else:
