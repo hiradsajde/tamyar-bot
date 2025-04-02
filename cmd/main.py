@@ -12,6 +12,9 @@ from sqlmodel import SQLModel
 from database.models import engine
 from database.view_models import create_or_get_user, is_spam, get_daily_download , create_request, get_request
 from utils.definitions import is_participant, check_output , ytdlp_sentence , is_joined_sponsers
+from functools import partial
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+from pathlib import Path
 from hurry.filesize import size
 from dotenv import load_dotenv
 from utils.config import config
@@ -160,7 +163,14 @@ def main():
                     )
                     loop = asyncio.get_event_loop()
                     loop.create_task(ytd.do())
+def start_httpd(directory: Path, port: int = 8000):
+    print(f"serving from {directory}...")
+    handler = partial(SimpleHTTPRequestHandler, directory=directory)
+    httpd = HTTPServer(('localhost', port), handler)
+    httpd.serve_forever()
+    
 if __name__ == "__main__":
+    start_httpd("./downloads",8000)
     SQLModel.metadata.create_all(engine)
     load_dotenv()
     main()
