@@ -9,6 +9,7 @@ from database.view_models import create_download , get_request
 from telethon.tl.types import DocumentAttributeVideo, DocumentAttributeAudio
 from utils.definitions import ytdlp_sentence
 from utils.config import config 
+import asyncio
 
 class youtube_handler :
     def __init__(self , chat_id , message_id , file_id , format_id, ext):
@@ -66,7 +67,10 @@ class youtube_handler :
                         config.get("MAIN_MENTION")
                         last_complition_percentage = int(complition_percentage)
                         if complition_percentage == 100 :
-                            files = self.get_target_files()
+                            files = self.get_target_files(self.ext)
+                            while len(files) == 0 :
+                                files = self.get_target_files(self.ext)
+                                await asyncio.sleep(0.1)
                             for file in files:
                                 last_complition_percentage = -1
                                 caption = "🖊️ <u>" + self.file_info.title + "</u>" + "\n" +\
@@ -107,8 +111,6 @@ class youtube_handler :
                                         )
                                         if message:
                                             self.delete()
-                                        
-
                                     else:
                                         async with client.action(message.chat_id, "video"):
                                             message = await client.send_file(
@@ -142,8 +144,8 @@ class youtube_handler :
     def get_files(self):
         files = glob(f"./downloads/{self.name}/*") 
         return files
-    def get_target_files(self):
-        files = [file_name for file_name in glob(f"./downloads/{self.name}/*") if not (file_name.endswith(".part") or file_name.endswith(".jpg"))]
+    def get_target_files(self,ext):
+        files = [file_name for file_name in glob(f"./downloads/{self.name}/*.{ext}") if not (file_name.endswith(".part") or file_name.endswith(".jpg"))]
         return files
     async def do(self):
         try :
