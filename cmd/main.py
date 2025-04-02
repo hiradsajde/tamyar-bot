@@ -48,7 +48,7 @@ def main():
                             thumb_name = f"./downloads/{str(event.chat_id) + str(time())}"
                             try:
                                 proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') else None
-                                out = ["yt-dlp","--cookies","./cookies.txt","-s","--print","%(.{title,description,formats,thumbnails,duration})#j","--convert-thumbnails","jpg", "--write-thumbnail", "-o" , f"{thumb_name}.%(ext)s","--no-simulate","--skip-download",f"https://youtu.be/{captured_id}"]
+                                out = ["yt-dlp","-s","--print","%(.{title,description,formats,thumbnails,duration})#j","--convert-thumbnails","jpg", "--write-thumbnail", "-o" , f"{thumb_name}.%(ext)s","--no-simulate","--skip-download",f"https://youtu.be/{captured_id}"]
                                 if proxy_handler: 
                                     flag , proxy = proxy_handler.split(" ")
                                     out.insert(1, flag)

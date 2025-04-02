@@ -24,9 +24,9 @@ class youtube_handler :
         url = f"https://youtu.be/{self.file_id}"
         proxy_handler = f"--proxy {config.get('PROXY_TYPE')}://{config.get('PROXY_IP')}:{config.get('PROXY_PORT')}" if config.get('PROXY_TYPE') != None else " "
         if self.ext == "m4a": 
-            out = ["yt-dlp","--write-thumbnail","--convert-thumbnails","jpg","--cookies","./cookies.txt","-o",f"./downloads/{self.name}/{self.file_info.title}.%(ext)s","-f",self.format_id,"--add-metadata","--embed-thumbnail",url]
+            out = ["yt-dlp","--write-thumbnail","--convert-thumbnails","jpg","-o",f"./downloads/{self.name}/{self.file_info.title}.%(ext)s","-f",self.format_id,"--add-metadata","--embed-thumbnail",url]
         else : 
-            out = ["yt-dlp","--write-thumbnail","--convert-thumbnails","jpg","--cookies","./cookies.txt","-o",f"./downloads/{self.name}/{self.file_info.title}.%(ext)s","-f",f"{self.format_id}+bestaudio","--audio-multistreams","--video-multistreams","-S","res,ext:mp4","--add-metadata" , "--embed-thumbnail",url]
+            out = ["yt-dlp","--write-thumbnail","--convert-thumbnails","jpg","-o",f"./downloads/{self.name}/{self.file_info.title}.%(ext)s","-f",f"{self.format_id}+bestaudio","--audio-multistreams","--video-multistreams","-S","res,ext:mp4","--add-metadata" , "--embed-thumbnail",url]
         if proxy_handler: 
             flag , proxy = proxy_handler.split(" ")
             out.insert(1, flag)
