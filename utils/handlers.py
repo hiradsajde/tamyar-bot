@@ -66,75 +66,76 @@ class youtube_handler :
                         "✔️ <b>" + format(int(complition_percentage), '03d') + "%</b> " + loadbar + "\n" +\
                         config.get("MAIN_MENTION")
                         last_complition_percentage = int(complition_percentage)
-                        if complition_percentage == 100 :
-                            files = self.get_target_files(self.ext)
-                            while len(files) == 0 :
-                                files = self.get_target_files(self.ext)
-                                await asyncio.sleep(0.1)
-                            for file in files:
-                                last_complition_percentage = -1
-                                caption = "🖊️ <u>" + self.file_info.title + "</u>" + "\n" +\
-                                          "<i>" + self.file_info.description + "</i>\n" +\
-                                          "🔗 https://youtu.be/" + self.file_info.file_id + "\n" +\
-                                          config.get("MAIN_MENTION")
-                                async def progress_callback(downloaded,total):
-                                    nonlocal last_complition_percentage
-                                    complition_percentage = int((downloaded/total)*100)
-                                    if  last_complition_percentage != int(complition_percentage):
-                                        last_complition_percentage = int(complition_percentage)
-                                        loadbar = "■" * int(complition_percentage // 10) + "□" * (10 - int(complition_percentage // 10))
-                                        caption = "🖊️ <u>" + self.file_info.title + "</u>" + "\n" +\
-                                        "<i>" + self.file_info.description + "</i>\n" +\
-                                        "🔗 https://youtu.be/" + self.file_info.file_id + "\n" +\
-                                        "<b>" + i18n.t("sentence.uploading") + "</b> " + "\n" +\
-                                        "✔️ <b>" + format(int(complition_percentage), '03d') + "%</b>" + loadbar + "\n" +\
-                                        config.get("MAIN_MENTION")
-                                        if complition_percentage == 100 :
-                                            for message in messages:
-                                                await message.delete()    
-                                            create_download(chat_id=self.chat_id,size=total,url=url)
-
-                                        else:
-                                            for message in messages:
-                                                await message.edit(caption,parse_mode="html")
-                                thumb = f"./downloads/{self.name}/{self.file_info.title}.jpg"
-                                for message in messages:
-                                    if self.ext == "m4a": 
-                                        message= await client.send_file(
-                                            caption= caption,
-                                            entity = message.chat_id,
-                                            reply_to = message.reply_to.reply_to_msg_id, 
-                                            file = file,
-                                            progress_callback=progress_callback, 
-                                            parse_mode="html", 
-                                            attributes=(DocumentAttributeAudio(self.file_info.duration),)
-                                        )
-                                        if message:
-                                            self.delete()
-                                    else:
-                                        async with client.action(message.chat_id, "video"):
-                                            message = await client.send_file(
-                                                caption= caption,
-                                                entity = message.chat_id,
-                                                reply_to = message.reply_to.reply_to_msg_id, 
-                                                file = file,
-                                                thumb = thumb,
-                                                progress_callback=progress_callback, 
-                                                parse_mode="html", 
-                                                attributes=(DocumentAttributeVideo(self.file_info.duration,0,0),)
-                                            )
-                                            if message:
-                                                self.delete()
-                        else :
-                            for message in messages:
-                                try:
-                                    await message.edit(caption,parse_mode="html")
-                                except Exception as e:
-                                    continue
+                        
                 result.append([])
                 line += 1 
             else:
                 result[line].append(char)
+        if complition_percentage == 100 :
+            files = self.get_target_files(self.ext)
+            while len(files) == 0 :
+                files = self.get_target_files(self.ext)
+                await asyncio.sleep(0.1)
+            for file in files:
+                last_complition_percentage = -1
+                caption = "🖊️ <u>" + self.file_info.title + "</u>" + "\n" +\
+                          "<i>" + self.file_info.description + "</i>\n" +\
+                          "🔗 https://youtu.be/" + self.file_info.file_id + "\n" +\
+                          config.get("MAIN_MENTION")
+                async def progress_callback(downloaded,total):
+                    nonlocal last_complition_percentage
+                    complition_percentage = int((downloaded/total)*100)
+                    if  last_complition_percentage != int(complition_percentage):
+                        last_complition_percentage = int(complition_percentage)
+                        loadbar = "■" * int(complition_percentage // 10) + "□" * (10 - int(complition_percentage // 10))
+                        caption = "🖊️ <u>" + self.file_info.title + "</u>" + "\n" +\
+                        "<i>" + self.file_info.description + "</i>\n" +\
+                        "🔗 https://youtu.be/" + self.file_info.file_id + "\n" +\
+                        "<b>" + i18n.t("sentence.uploading") + "</b> " + "\n" +\
+                        "✔️ <b>" + format(int(complition_percentage), '03d') + "%</b>" + loadbar + "\n" +\
+                        config.get("MAIN_MENTION")
+                        if complition_percentage == 100 :
+                            for message in messages:
+                                await message.delete()    
+                            create_download(chat_id=self.chat_id,size=total,url=url)
+        
+                        else:
+                            for message in messages:
+                                await message.edit(caption,parse_mode="html")
+                thumb = f"./downloads/{self.name}/{self.file_info.title}.jpg"
+                for message in messages:
+                    if self.ext == "m4a": 
+                        message= await client.send_file(
+                            caption= caption,
+                            entity = message.chat_id,
+                            reply_to = message.reply_to.reply_to_msg_id, 
+                            file = file,
+                            progress_callback=progress_callback, 
+                            parse_mode="html", 
+                            attributes=(DocumentAttributeAudio(self.file_info.duration),)
+                        )
+                        if message:
+                            self.delete()
+                    else:
+                        async with client.action(message.chat_id, "video"):
+                            message = await client.send_file(
+                                caption= caption,
+                                entity = message.chat_id,
+                                reply_to = message.reply_to.reply_to_msg_id, 
+                                file = file,
+                                thumb = thumb,
+                                progress_callback=progress_callback, 
+                                parse_mode="html", 
+                                attributes=(DocumentAttributeVideo(self.file_info.duration,0,0),)
+                            )
+                            if message:
+                                self.delete()
+        else :
+            for message in messages:
+                try:
+                    await message.edit(caption,parse_mode="html")
+                except Exception as e:
+                    continue        
     def delete(self):
         files = self.get_files()
         for file in files :
