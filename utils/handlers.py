@@ -2,10 +2,7 @@ import os
 import time 
 import random
 import subprocess
-import glob
-import asyncio
-import glob 
-import requests 
+from glob import glob
 from utils.config import client
 from utils.translation import i18n
 from database.view_models import create_download , get_request
@@ -99,7 +96,7 @@ class youtube_handler :
                                 thumb = f"./downloads/{self.name}/{self.file_info.title}.jpg"
                                 for message in messages:
                                     if self.ext == "m4a": 
-                                        await client.send_file(
+                                        message= await client.send_file(
                                             caption= caption,
                                             entity = message.chat_id,
                                             reply_to = message.reply_to.reply_to_msg_id, 
@@ -108,12 +105,13 @@ class youtube_handler :
                                             parse_mode="html", 
                                             attributes=(DocumentAttributeAudio(self.file_info.duration),)
                                         )
-                                        self.delete()
+                                        if message:
+                                            self.delete()
                                         
 
                                     else:
                                         async with client.action(message.chat_id, "video"):
-                                            await client.send_file(
+                                            message = await client.send_file(
                                                 caption= caption,
                                                 entity = message.chat_id,
                                                 reply_to = message.reply_to.reply_to_msg_id, 
@@ -123,13 +121,13 @@ class youtube_handler :
                                                 parse_mode="html", 
                                                 attributes=(DocumentAttributeVideo(self.file_info.duration,0,0),)
                                             )
-                                        self.delete()
+                                            if message:
+                                                self.delete()
                         else :
                             for message in messages:
                                 try:
                                     await message.edit(caption,parse_mode="html")
                                 except Exception as e:
-                                    print(e) 
                                     continue
                 result.append([])
                 line += 1 
@@ -142,10 +140,10 @@ class youtube_handler :
         if os.path.isdir(f"./downloads/{self.name}") : 
             os.rmdir(f"./downloads/{self.name}")
     def get_files(self):
-        files = glob.glob(f"./downloads/{self.name}/*") 
+        files = glob(f"./downloads/{self.name}/*") 
         return files
     def get_target_files(self):
-        files = [file_name for file_name in glob.glob(f"./downloads/{self.name}/*") if not (file_name.endswith(".part") or file_name.endswith(".jpg"))]
+        files = [file_name for file_name in glob(f"./downloads/{self.name}/*") if not (file_name.endswith(".part") or file_name.endswith(".jpg"))]
         return files
     async def do(self):
         try :

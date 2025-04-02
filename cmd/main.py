@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from utils.config import config
 from urllib.parse import urlparse, parse_qs
 from time import time 
+from glob import glob
 import asyncio 
 
 def main():
@@ -116,13 +117,15 @@ def main():
                                     Button.inline(icon + " " + dl_info_format["format_note"] + " - " + file_size, captured_id + "~" + dl_info_format["format_id"] + "~" + dl_info_format["ext"])
                                 )
                             await loading.delete()
-                            await event.reply(
+                            message = await event.reply(
                                 dl_info_text,
                                 file= await client.upload_file(f"{thumb_name}.jpg"),
                                 parse_mode= "html",
                                 buttons= dl_info_formats_buttons
                             )
-                            os.remove(f"{thumb_name}.jpg")
+                            if message:
+                                for file in glob(f"{thumb_name}*"):
+                                    os.remove(file)
                         else :
                             await event.reply(i18n.t("sentence.not_supported"))
                     else :
